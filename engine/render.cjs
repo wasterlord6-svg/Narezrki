@@ -4,6 +4,7 @@
 //   node engine/render.cjs --show <show.js> --words <words.json> --out <video.mp4>
 //   node engine/render.cjs --show <show.js> --words <words.json> --stills 0.5,2.1 --outdir <dir>
 //   ... --cover "4.2|НАЗВАНИЕ|ЧАСТЬ 1" --out cover.jpg
+// --cutq убирает финальный кадр с вопросом (для длинной склейки).
 // --show принимает несколько файлов через запятую; --shots <shots.json>, --plate и --footer уходят в show.js.
 // Дополнительно: --meta <file.json> сохраняет длительность, склейки и удары для звука.
 const { chromium } = require('playwright');
@@ -22,7 +23,7 @@ const FPS = 30;
   await page.setContent('<html><body style="margin:0;background:#000"></body></html>');
   const shotsData = arg('shots') ? JSON.parse(fs.readFileSync(arg('shots'), 'utf8')) : null;
   await page.evaluate(([w, s, c]) => { window.WORDS = w; window.SHOTS = s; window.CFG = c; },
-    [words, shotsData, { plate: arg('plate'), footer: arg('footer') }]);
+    [words, shotsData, { plate: arg('plate'), footer: arg('footer'), cutQuestion: process.argv.includes('--cutq') }]);
   for (const f of ['raster.js', 'world.js', 'scenes.js', 'overlay.js', 'show.js']) await page.addScriptTag({ path: path.join(__dirname, f) });
   for (const f of show.split(',')) await page.addScriptTag({ path: f });
   await page.evaluate(() => document.fonts.load('800 100px "Inter Display ExtraBold"'));

@@ -2,7 +2,9 @@
 // Собирает показ из разметки: window.SHOTS = [{t, id, slam}] (из tools/align.py),
 // window.WORDS — слова с таймингами, presets — словарь кадров серии.
 window.buildShow = function (presets, cfg) {
-  const W = window.WORDS, SH = window.SHOTS, dur = W[W.length - 1].end + (cfg.tail || 1.3);
+  let W = window.WORDS, SH = window.SHOTS, dur = W[W.length - 1].end + (cfg.tail || 1.3);
+  // для длинной склейки: без финального кадра с вопросом
+  if (cfg.cutQuestion) { dur = SH[SH.length - 1].t - 0.08; SH = SH.slice(0, -1); W = W.filter(w => w.start < dur); }
   const shots = SH.map((s, i) => {
     const p = presets[s.id];
     if (!p) throw new Error('нет пресета кадра: ' + s.id);
@@ -18,5 +20,5 @@ window.buildShow = function (presets, cfg) {
       color: /УВОЛЕН|БУНТ/.test(s.slam) ? '#ff3b30' : undefined, rot: i % 2 ? 0.04 : -0.04 });
   });
   window.SHOW_DEF = { duration: dur, shots, slams, words: W, plate: cfg.plate,
-    cuts: shots.slice(1).map(s => s.t0), hits: slams.map(s => s.t), bell: shots[shots.length - 1].t0 };
+    cuts: shots.slice(1).map(s => s.t0), hits: slams.map(s => s.t), bell: cfg.cutQuestion ? null : shots[shots.length - 1].t0 };
 };

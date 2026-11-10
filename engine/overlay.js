@@ -153,10 +153,10 @@ function drawCard(c, tl, d) {
     txt(c.head, 540, 520, 54, '#222');
     c.rows.forEach((r, i) => {
       const y = 660 + i * 125;
-      txt(r, 180, y, 62, i === c.strike ? '#b00' : '#222', 'left');
+      txt(r, 180, y, 62, '#222', 'left');
       if (i === c.strike) {
         const w = xo.measureText(r).width + 60, p = clamp01((tl - 0.2 * d) / (0.25 * d));
-        xo.strokeStyle = '#e01010'; xo.lineWidth = 14; xo.lineCap = 'round';
+        xo.strokeStyle = '#e01010'; xo.lineWidth = 9; xo.lineCap = 'round';
         xo.beginPath(); xo.moveTo(150, y); xo.lineTo(150 + w * p, y - 6); xo.stroke();
       }
     });
