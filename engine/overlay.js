@@ -90,10 +90,10 @@ function drawEndCard(card, t) {
 let SHOW = null, SUBG = null;
 function setShow(show) { SHOW = show; SUBG = groupWords(show.words || []); if (!co) initCanvases(); }
 
-function drawFrame(t) {
+function drawFrame(t, clean) {
   const sh = SHOW.shots.find(s => t >= s.t0 && t < s.t1) || SHOW.shots[SHOW.shots.length - 1];
   const tl = t - sh.t0, S = new Scene();
-  sh.build(S, tl, t);
+  sh.build(S, tl, t, sh.t1 - sh.t0);
   render3D(S, sh.cam(tl, sh.t1 - sh.t0), sh.env);
   // эффекты склейки и тряска от слэмов
   const first = sh === SHOW.shots[0], punch = first ? 0 : Math.max(0, 1 - tl / 0.2);
@@ -102,8 +102,13 @@ function drawFrame(t) {
     const k = Math.max(0, 1 - (t - sl.t) / 0.28);
     if (t >= sl.t && k > 0) { dx += Math.sin(t * 97) * 16 * k; dy += Math.cos(t * 83) * 16 * k; }
   }
-  composite({ zoom: 1.02 + 0.09 * punch * punch, dx, dy, bloom: sh.bloom, vignette: sh.vignette });
+  // длинный кадр перебивается наездом в середине
+  const d = sh.t1 - sh.t0, mid = d > 2.7 && tl > d / 2 && !sh.card;
+  const p2 = mid ? Math.max(0, 1 - (tl - d / 2) / 0.2) : 0;
+  if (clean) { composite({ zoom: 1.02, bloom: sh.bloom, vignette: sh.vignette }); return; }
+  composite({ zoom: 1.02 + 0.09 * punch * punch + (mid ? 0.14 : 0) + 0.07 * p2 * p2, dx, dy, bloom: sh.bloom, vignette: sh.vignette });
   if (!first && tl < 0.13) { xo.fillStyle = `rgba(255,255,255,${0.6 * (1 - tl / 0.13)})`; xo.fillRect(0, 0, OW, OH); }
+  if (sh.card) drawCard(sh.card, tl, d);
   if (SHOW.plate) drawPlate(SHOW.plate, t);
   for (const sl of SHOW.slams || []) drawSlam(sl, t);
   if (SHOW.endCard) drawEndCard(SHOW.endCard, t);
@@ -113,3 +118,85 @@ function drawFrame(t) {
 }
 
 window.renderFrame = (t, quality) => { drawFrame(t); return co.toDataURL('image/jpeg', quality || 0.93).slice(23); };
+
+// ---------- экранные карточки поверх затемнённой сцены
+function panel(x, y, w, h, col, border) {
+  xo.fillStyle = col; xo.beginPath(); xo.roundRect(x, y, w, h, 36); xo.fill();
+  if (border) { xo.lineWidth = 8; xo.strokeStyle = border; xo.stroke(); }
+}
+function txt(s, x, y, size, col, align) {
+  xo.font = `800 ${size}px ${FONT}`; xo.textAlign = align || 'center'; xo.textBaseline = 'middle'; xo.fillStyle = col; xo.fillText(s, x, y);
+}
+function fitSize(s, size, maxW) { xo.font = `800 ${size}px ${FONT}`; const w = xo.measureText(s).width; return w > maxW ? size * maxW / w : size; }
+
+function drawCard(c, tl, d) {
+  xo.fillStyle = `rgba(0,0,12,${0.62 * smooth(tl / 0.15)})`; xo.fillRect(0, 0, OW, OH);
+  const k = backOut(tl / 0.16);
+  xo.save(); xo.translate(OW / 2, 800); xo.scale(0.5 + 0.5 * k, 0.5 + 0.5 * k); xo.translate(-OW / 2, -800);
+  if (c.type === 'board') {
+    panel(90, 520, 900, 540, '#10141c', '#ffb21f');
+    txt(c.head, 540, 620, 62, '#9fb3c8');
+    xo.shadowColor = '#ffb21f'; xo.shadowBlur = 45;
+    txt(c.big, 540, 850, fitSize(c.big, 250, 800), '#ffb21f');
+    xo.shadowBlur = 0;
+  } else if (c.type === 'log') {
+    panel(70, 430, 940, 740, '#0d1320', '#7fd4ff');
+    txt(c.head, 540, 520, 58, '#7fd4ff');
+    c.rows.forEach((r, i) => {
+      if (tl < i * d * 0.16) return;
+      const y = 660 + i * 125;
+      if (r[2]) { xo.fillStyle = `rgba(255,50,40,${0.3 + 0.25 * Math.sin(tl * 16)})`; xo.fillRect(90, y - 55, 900, 110); }
+      txt(r[0], 120, y, 46, '#c8d3e0', 'left'); txt(r[1], 960, y, 58, r[2] ? '#ff5548' : '#ffffff', 'right');
+    });
+  } else if (c.type === 'list') {
+    panel(110, 430, 860, 740, '#f4f1e6', '#333');
+    txt(c.head, 540, 520, 54, '#222');
+    c.rows.forEach((r, i) => {
+      const y = 660 + i * 125;
+      txt(r, 180, y, 62, i === c.strike ? '#b00' : '#222', 'left');
+      if (i === c.strike) {
+        const w = xo.measureText(r).width + 60, p = clamp01((tl - 0.2 * d) / (0.25 * d));
+        xo.strokeStyle = '#e01010'; xo.lineWidth = 14; xo.lineCap = 'round';
+        xo.beginPath(); xo.moveTo(150, y); xo.lineTo(150 + w * p, y - 6); xo.stroke();
+      }
+    });
+  } else if (c.type === 'counter') {
+    panel(140, 480, 800, 640, '#10141c', '#9fb3c8');
+    txt(c.head, 540, 580, 62, '#9fb3c8');
+    const n = Math.round(lerp(c.from, c.to, clamp01((tl - 0.3 * d) / (0.4 * d))));
+    const col = n >= c.from ? '#3dff6e' : n > c.to ? '#ffe21f' : '#ff4b3e';
+    xo.shadowColor = col; xo.shadowBlur = 50; txt(String(n), 540, 860, 440, col); xo.shadowBlur = 0;
+  } else if (c.type === 'chart') {
+    panel(90, 470, 900, 660, '#10141c', '#9fb3c8');
+    txt(c.head, 540, 560, 56, '#9fb3c8');
+    const pts = [[0, 0.2], [0.18, 0.16], [0.36, 0.26], [0.52, 0.5], [0.72, 0.72], [1, 0.93]], p = clamp01(tl / (d * 0.75));
+    const X = u => 160 + u * 760, Y = v => 650 + v * 420;
+    xo.strokeStyle = '#ff4b3e'; xo.lineWidth = 16; xo.lineJoin = 'round'; xo.lineCap = 'round'; xo.beginPath();
+    let lx = X(0), ly = Y(pts[0][1]); xo.moveTo(lx, ly);
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i]; if (p <= a[0]) break;
+      const q = clamp01((p - a[0]) / (b[0] - a[0])); lx = X(lerp(a[0], b[0], q)); ly = Y(lerp(a[1], b[1], q)); xo.lineTo(lx, ly);
+    }
+    xo.stroke();
+    xo.fillStyle = '#ffe21f'; xo.beginPath(); xo.arc(lx, ly, 46, 0, 7); xo.fill(); txt('₽', lx, ly + 4, 60, '#000');
+  } else if (c.type === 'question') {
+    txt('ПИШИ В КОММЕНТАРИЯХ', 540, 470, 50, '#ffffff');
+    c.lines.forEach((ln, i) => strokeText(ln, 540, 660 + i * 190, fitSize(ln, 165, 940), '#ffe21f', '#000', 26));
+    if (c.footer && tl > 0.5) {
+      const y = 660 + c.lines.length * 190 + 10; xo.font = `800 50px ${FONT}`;
+      const w = xo.measureText(c.footer).width + 70;
+      panel(540 - w / 2, y - 48, w, 96, '#ffffff'); txt(c.footer, 540, y + 2, 50, '#000');
+    }
+  }
+  xo.restore();
+}
+
+// Обложка: чистый кадр без субтитров и крупное название.
+window.renderCover = (t, title, sub) => {
+  drawFrame(t, true);
+  xo.fillStyle = 'rgba(0,0,0,0.25)'; xo.fillRect(0, 0, OW, OH);
+  strokeText(title, 540, 560, fitSize(title, 240, 960), '#ffe21f', '#000', 34);
+  xo.font = `800 120px ${FONT}`; const w = xo.measureText(sub).width + 110;
+  panel(540 - w / 2, 720, w, 190, '#ff3b30'); txt(sub, 540, 818, 120, '#ffffff');
+  return co.toDataURL('image/jpeg', 0.92).slice(23);
+};

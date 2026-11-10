@@ -3,6 +3,8 @@
 // Рендер показа в видео или контрольные кадры.
 //   node engine/render.cjs --show <show.js> --words <words.json> --out <video.mp4>
 //   node engine/render.cjs --show <show.js> --words <words.json> --stills 0.5,2.1 --outdir <dir>
+//   ... --cover "4.2|НАЗВАНИЕ|ЧАСТЬ 1" --out cover.jpg
+// --show принимает несколько файлов через запятую; --shots <shots.json>, --plate и --footer уходят в show.js.
 // Дополнительно: --meta <file.json> сохраняет длительность, склейки и удары для звука.
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -18,14 +20,19 @@ const FPS = 30;
   const page = await browser.newPage({ viewport: { width: 400, height: 300 } });
   page.on('pageerror', e => { console.error('ошибка страницы:', e.message); process.exit(1); });
   await page.setContent('<html><body style="margin:0;background:#000"></body></html>');
-  await page.evaluate(w => { window.WORDS = w; }, words);
-  for (const f of ['raster.js', 'world.js', 'overlay.js']) await page.addScriptTag({ path: path.join(__dirname, f) });
-  await page.addScriptTag({ path: show });
+  const shotsData = arg('shots') ? JSON.parse(fs.readFileSync(arg('shots'), 'utf8')) : null;
+  await page.evaluate(([w, s, c]) => { window.WORDS = w; window.SHOTS = s; window.CFG = c; },
+    [words, shotsData, { plate: arg('plate'), footer: arg('footer') }]);
+  for (const f of ['raster.js', 'world.js', 'scenes.js', 'overlay.js', 'show.js']) await page.addScriptTag({ path: path.join(__dirname, f) });
+  for (const f of show.split(',')) await page.addScriptTag({ path: f });
   await page.evaluate(() => document.fonts.load('800 100px "Inter Display ExtraBold"'));
   const meta = await page.evaluate(() => { setShow(window.SHOW_DEF); const d = window.SHOW_DEF; return { duration: d.duration, cuts: d.cuts, hits: d.hits, bell: d.bell }; });
   if (arg('meta')) fs.writeFileSync(arg('meta'), JSON.stringify(meta));
 
-  if (arg('stills')) {
+  if (arg('cover')) {
+    const [t, title, sub] = arg('cover').split('|');
+    fs.writeFileSync(arg('out'), Buffer.from(await page.evaluate(([t, a, b]) => window.renderCover(t, a, b), [Number(t), title, sub]), 'base64'));
+  } else if (arg('stills')) {
     const dir = arg('outdir'); fs.mkdirSync(dir, { recursive: true });
     for (const t of arg('stills').split(',').map(Number)) {
       const b64 = await page.evaluate(t => window.renderFrame(t, 0.9), t);
