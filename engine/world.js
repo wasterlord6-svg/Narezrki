@@ -2,6 +2,12 @@
 // Персонажи, техника и окружения из коробок. Зависит от raster.js.
 
 const SKIN = [0.95, 0.72, 0.55];
+// Зима: белая земля, снег на крышах и машинах, сугробы. Включается из show: setWinter(true).
+let WINTER = false;
+function setWinter(v) { WINTER = !!v; }
+const SNOW = [0.9, 0.93, 0.98];
+// цвет поверхности зимой: смешиваем с белым
+const wint = (c, k) => WINTER ? lerp3(c, SNOW, k == null ? 0.85 : k) : c;
 
 // Блочный человек. Смотрит в +Z при yaw = 0.
 // o: x,y,z,yaw,s, walk (фаза шага), swing, lean, armL/armR {rx,rz}, headYaw, headPitch,
@@ -26,7 +32,9 @@ function person(S, o) {
     S.box(M(U, T(0, 0.36, 0)), 0.68, 0.07, 0.41, [0.95, 0.95, 0.7], 0.5);
     S.box(M(U, T(0, 0.58, 0)), 0.68, 0.07, 0.41, [0.95, 0.95, 0.7], 0.5);
   }
-  if (o.tie) S.box(M(U, T(0, 0.5, 0.18)), 0.1, 0.5, 0.02, [0.8, 0.1, 0.1]);
+  if (o.tie) S.box(M(U, T(0, 0.5, 0.18)), 0.1, 0.5, 0.02, o.tieCol || [0.8, 0.1, 0.1]);
+  if (o.coat) S.box(M(U, T(0, 0.3, 0)), 0.66, 1.0, 0.39, o.coat);
+  if (o.scarf) S.box(M(U, T(0, 0.8, 0.02)), 0.5, 0.14, 0.41, o.scarf);
   const arms = [o.armL || { rx: la * 0.8 }, o.armR || { rx: -la * 0.8 }];
   for (let k = 0; k < 2; k++) {
     const sd = k ? 1 : -1, a = arms[k];
@@ -46,7 +54,18 @@ function person(S, o) {
     if (o.angry) S.box(M(Hd, T(sd * 0.11, 0.15, 0.25), Rz(sd * 0.4)), 0.15, 0.04, 0.02, [0.1, 0.07, 0.05]);
   }
   S.box(M(Hd, T(0, -0.12, 0.245)), 0.17, 0.035 + 0.1 * (o.talk || 0), 0.02, [0.3, 0.05, 0.05]);
-  if (o.hat === 'helmet') {
+  if (o.glasses === 'sun') for (const sd of [-1, 1]) S.box(M(Hd, T(sd * 0.11, 0.05, 0.255)), 0.15, 0.12, 0.02, [0.04, 0.04, 0.05]);
+  else if (o.glasses) for (const sd of [-1, 1]) {
+    const G = M(Hd, T(sd * 0.11, 0.05, 0.255)), fc = [0.12, 0.12, 0.14];
+    S.box(M(G, T(0, 0.065, 0)), 0.16, 0.025, 0.02, fc); S.box(M(G, T(0, -0.065, 0)), 0.16, 0.025, 0.02, fc);
+    S.box(M(G, T(0.07, 0, 0)), 0.025, 0.15, 0.02, fc); S.box(M(G, T(-0.07, 0, 0)), 0.025, 0.15, 0.02, fc);
+  }
+  if (o.glasses) S.box(M(Hd, T(0, 0.07, 0.26)), 0.1, 0.03, 0.02, [0.1, 0.1, 0.1]);
+  if (o.hat === 'beanie') {
+    const hc = o.hatCol || [0.75, 0.15, 0.15];
+    S.box(M(Hd, T(0, 0.27, 0)), 0.52, 0.16, 0.52, hc);
+    S.box(M(Hd, T(0, 0.39, 0)), 0.14, 0.1, 0.14, [0.95, 0.95, 0.95]);
+  } else if (o.hat === 'helmet') {
     const hc = o.hatCol || [1, 0.85, 0.1];
     S.box(M(Hd, T(0, 0.29, 0)), 0.54, 0.16, 0.54, hc);
     S.box(M(Hd, T(0, 0.22, 0.14)), 0.54, 0.04, 0.66, hc);
@@ -76,6 +95,7 @@ function van(S, x, z, yaw, t, o) {
   S.box(M(B, T(0, 0.85, 1.75)), 2.0, 0.9, 1.1, w);
   S.box(M(B, T(0, 1.55, 1.55)), 1.9, 0.6, 0.75, [0.2, 0.3, 0.42], 0.15);
   S.box(M(B, T(0, 0.95, -0.5)), 2.04, 0.28, 3.42, [0.1, 0.4, 0.9]);
+  if (WINTER) S.box(M(B, T(0, 2.25, -0.5)), 1.94, 0.12, 3.3, SNOW, 0.15);
   for (const sx of [-1, 1]) for (const sz of [-1.4, 1.5]) S.box(M(B, T(sx * 0.95, 0.36, sz)), 0.3, 0.72, 0.72, [0.06, 0.06, 0.07]);
   const hl = o.lights ? 1.4 : 0.2;
   for (const sx of [-1, 1]) S.box(M(B, T(sx * 0.65, 0.7, 2.31)), 0.32, 0.2, 0.04, [1, 0.95, 0.7], hl);
@@ -96,6 +116,7 @@ function cone(S, x, z) {
 function house(S, x, z, w, h, d, col, seed, lit) {
   S.box(T(x, h / 2, z), w, h, d, col);
   S.box(T(x, h + 0.15, z), w + 0.3, 0.3, d + 0.3, [col[0] * 0.6, col[1] * 0.6, col[2] * 0.6]);
+  if (WINTER) S.box(T(x, h + 0.38, z), w + 0.3, 0.16, d + 0.3, SNOW, 0.12);
   const nx = Math.max(1, Math.floor(w / 1.5)), ny = Math.max(1, Math.floor(h / 1.7));
   for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
     const on = hash(seed + i * 5.3 + j * 9.1) < lit;

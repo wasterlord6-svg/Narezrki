@@ -105,9 +105,10 @@ function drawFrame(t, clean) {
   // длинный кадр перебивается наездом в середине
   const d = sh.t1 - sh.t0, mid = d > 2.7 && tl > d / 2 && !sh.card;
   const p2 = mid ? Math.max(0, 1 - (tl - d / 2) / 0.2) : 0;
-  if (clean) { composite({ zoom: 1.02, bloom: sh.bloom, vignette: sh.vignette }); return; }
+  if (clean) { composite({ zoom: 1.02, bloom: sh.bloom, vignette: sh.vignette }); if (sh.snow) drawSnow(t, sh.snow === true ? 1 : sh.snow); return; }
   composite({ zoom: 1.02 + 0.09 * punch * punch + (mid ? 0.14 : 0) + 0.07 * p2 * p2, dx, dy, bloom: sh.bloom, vignette: sh.vignette });
   if (!first && tl < 0.13) { xo.fillStyle = `rgba(255,255,255,${0.6 * (1 - tl / 0.13)})`; xo.fillRect(0, 0, OW, OH); }
+  if (sh.snow) drawSnow(t, sh.snow === true ? 1 : sh.snow);
   if (sh.card) drawCard(sh.card, tl, d);
   if (SHOW.plate) drawPlate(SHOW.plate, t);
   for (const sl of SHOW.slams || []) drawSlam(sl, t);
@@ -179,6 +180,26 @@ function drawCard(c, tl, d) {
     }
     xo.stroke();
     xo.fillStyle = '#ffe21f'; xo.beginPath(); xo.arc(lx, ly, 46, 0, 7); xo.fill(); txt('₽', lx, ly + 4, 60, '#000');
+  } else if (c.type === 'docs') {
+    c.docs.forEach((dc, i) => {
+      if (tl < i * 0.35) return;
+      const k2 = backOut((tl - i * 0.35) / 0.16), x = c.docs.length > 1 ? 300 + i * 480 : 540, rot = (i ? 0.06 : -0.06);
+      xo.save(); xo.translate(x, 820); xo.rotate(rot); xo.scale(k2, k2);
+      panel(-210, -300, 420, 600, '#f6f1e3', '#555');
+      txt(dc.title, 0, -220, 58, '#1d2a44');
+      for (let j = 0; j < 6; j++) { xo.fillStyle = '#b9b3a3'; xo.fillRect(-160, -120 + j * 50, j % 3 === 2 ? 200 : 320, 14); }
+      xo.strokeStyle = '#c0241c'; xo.lineWidth = 10; xo.beginPath(); xo.arc(90, 200, 70, 0, 7); xo.stroke();
+      txt(dc.stamp || 'ПАТЕНТ', 90, 202, 30, '#c0241c');
+      xo.restore();
+    });
+    if (c.head) strokeText(c.head, 540, 470, fitSize(c.head, 120, 940), '#ffe21f', '#000', 22);
+  } else if (c.type === 'offer') {
+    panel(90, 470, 900, 700, '#f6f1e3', '#222');
+    txt(c.head, 540, 560, 60, '#222');
+    c.rows.forEach((r, i) => {
+      if (tl < 0.15 + i * d * 0.18) return;
+      txt(r[0], 150, 700 + i * 140, 62, r[1] || '#222', 'left');
+    });
   } else if (c.type === 'question') {
     txt('ПИШИ В КОММЕНТАРИЯХ', 540, 470, 50, '#ffffff');
     c.lines.forEach((ln, i) => strokeText(ln, 540, 660 + i * 190, fitSize(ln, 165, 940), '#ffe21f', '#000', 26));
@@ -200,3 +221,16 @@ window.renderCover = (t, title, sub) => {
   panel(540 - w / 2, 720, w, 190, '#ff3b30'); txt(sub, 540, 818, 120, '#ffffff');
   return co.toDataURL('image/jpeg', 0.92).slice(23);
 };
+
+// ---------- снегопад поверх 3D-кадра (экранные снежинки с глубиной)
+function drawSnow(t, k) {
+  const n = Math.round(260 * (k == null ? 1 : k));
+  for (let i = 0; i < n; i++) {
+    const depth = 0.35 + hash(i * 1.7) * 0.65, sp = 70 + depth * 190;
+    const x = (hash(i * 3.1) * (OW + 200) - 100 + Math.sin(t * (0.6 + hash(i) * 0.9) + i) * 38 * depth + t * 25 * depth) % (OW + 200) - 100;
+    const y = (hash(i * 7.3) * (OH + 100) + t * sp) % (OH + 100) - 50;
+    const r = 2.5 + depth * 6;
+    xo.fillStyle = `rgba(255,255,255,${0.35 + depth * 0.55})`;
+    xo.fillRect(x, y, r, r);
+  }
+}
