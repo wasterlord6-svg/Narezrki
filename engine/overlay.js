@@ -92,9 +92,8 @@ function setShow(show) { SHOW = show; SUBG = groupWords(show.words || []); if (!
 
 function drawFrame(t, clean) {
   const sh = SHOW.shots.find(s => t >= s.t0 && t < s.t1) || SHOW.shots[SHOW.shots.length - 1];
-  const tl = t - sh.t0, S = new Scene();
-  sh.build(S, tl, t, sh.t1 - sh.t0);
-  render3D(S, sh.cam(tl, sh.t1 - sh.t0), sh.env);
+  const tl = t - sh.t0, paper = !!sh.paint;
+  if (!paper) { const S = new Scene(); sh.build(S, tl, t, sh.t1 - sh.t0); render3D(S, sh.cam(tl, sh.t1 - sh.t0), sh.env); }
   // эффекты склейки и тряска от слэмов
   const first = sh === SHOW.shots[0], punch = first ? 0 : Math.max(0, 1 - tl / 0.2);
   let dx = 0, dy = 0;
@@ -105,10 +104,11 @@ function drawFrame(t, clean) {
   // длинный кадр перебивается наездом в середине
   const d = sh.t1 - sh.t0, mid = d > 2.7 && tl > d / 2 && !sh.card;
   const p2 = mid ? Math.max(0, 1 - (tl - d / 2) / 0.2) : 0;
-  if (clean) { composite({ zoom: 1.02, bloom: sh.bloom, vignette: sh.vignette }); if (sh.snow) drawSnow(t, sh.snow === true ? 1 : sh.snow); return; }
-  composite({ zoom: 1.02 + 0.09 * punch * punch + (mid ? 0.14 : 0) + 0.07 * p2 * p2, dx, dy, bloom: sh.bloom, vignette: sh.vignette });
+  const fxz = { zoom: 1.02 + 0.09 * punch * punch + (mid ? 0.14 : 0) + 0.07 * p2 * p2, dx, dy, bloom: sh.bloom, vignette: sh.vignette };
+  if (clean) { if (paper) paintFrame(sh, tl, t, d, { zoom: 1.02 }); else { composite({ zoom: 1.02, bloom: sh.bloom, vignette: sh.vignette }); if (sh.snow) drawSnow(t, sh.snow === true ? 1 : sh.snow); } return; }
+  if (paper) paintFrame(sh, tl, t, d, fxz); else composite(fxz);
   if (!first && tl < 0.13) { xo.fillStyle = `rgba(255,255,255,${0.6 * (1 - tl / 0.13)})`; xo.fillRect(0, 0, OW, OH); }
-  if (sh.snow) drawSnow(t, sh.snow === true ? 1 : sh.snow);
+  if (sh.snow && !paper) drawSnow(t, sh.snow === true ? 1 : sh.snow);
   if (sh.card) drawCard(sh.card, tl, d);
   if (SHOW.plate) drawPlate(SHOW.plate, t);
   for (const sl of SHOW.slams || []) drawSlam(sl, t);

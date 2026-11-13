@@ -24,7 +24,7 @@ const FPS = 30;
   const shotsData = arg('shots') ? JSON.parse(fs.readFileSync(arg('shots'), 'utf8')) : null;
   await page.evaluate(([w, s, c]) => { window.WORDS = w; window.SHOTS = s; window.CFG = c; },
     [words, shotsData, { plate: arg('plate'), footer: arg('footer'), cutQuestion: process.argv.includes('--cutq') }]);
-  for (const f of ['raster.js', 'world.js', 'scenes.js', 'overlay.js', 'show.js']) await page.addScriptTag({ path: path.join(__dirname, f) });
+  for (const f of ['raster.js', 'world.js', 'scenes.js', 'overlay.js', 'paper.js', 'show.js']) await page.addScriptTag({ path: path.join(__dirname, f) });
   for (const f of show.split(',')) await page.addScriptTag({ path: f });
   await page.evaluate(() => document.fonts.load('800 100px "Inter Display ExtraBold"'));
   const meta = await page.evaluate(() => { setShow(window.SHOW_DEF); const d = window.SHOW_DEF; return { duration: d.duration, cuts: d.cuts, hits: d.hits, bell: d.bell }; });
