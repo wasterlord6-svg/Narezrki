@@ -7,6 +7,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 k=$1; footer=${2:-"ЧАСТЬ $((k+1)) — В ПРОФИЛЕ"}; R=../..; B=build
 mkdir -p $B
+# медленный голос без параметра скорости (Google Charon): ускорить, тайминги пересчитать
+if [ -f voice/raw/p${k}_voice_slow.wav ]; then
+  python3 $R/tools/voice_tempo.py voice/raw/p${k}_voice_slow.wav voice/raw/p${k}_stt_slow.json voice/raw/p${k}_voice_padded.wav voice/raw/p${k}_stt_padded.json ${TEMPO:-1.2}
+fi
 # если есть сырая озвучка с фразой-жертвой — отрезать её и проверить, что голос договорил
 if [ -f voice/raw/p${k}_voice_padded.wav ]; then
   python3 $R/tools/voice_tail.py voice/raw/p${k}_voice_padded.wav voice/raw/p${k}_stt_padded.json voice/p${k}_voice.wav voice/p${k}_stt.json

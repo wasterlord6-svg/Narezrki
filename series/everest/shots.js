@@ -13,8 +13,8 @@
       climbers: [Object.assign({ x: 300 + tl * 60, y: 1600, s: 0.9, walk: W(tl) }, MAL), Object.assign({ x: 470 + tl * 60, y: 1590, s: 0.9, walk: W(tl) + 1.6 }, IRV)] })),
     ridge_two: sh((P, tl) => evWide(P, tl, { sky: 'day', cloudsBack: true, cam: { x: 120, y: 300, zoom: 1.35 + tl * 0.03 },
       climbers: [Object.assign({ x: 520 + tl * 30, y: 1580, s: 0.55, walk: W(tl) }, MAL), Object.assign({ x: 610 + tl * 30, y: 1575, s: 0.55, walk: W(tl) + 1.6 }, IRV)], snow: 30 })),
-    portrait_m: sh((P, tl) => { desk(P); portrait(P, 540, 900, 1.6 + tl * 0.02, { name: 'ДЖОРДЖ МЭЛЛОРИ', sub: '1924', rot: -0.04, hair: '#4a2e1c' }); }),
-    portrait_i: sh((P, tl) => { desk(P, '#b8c4cc'); portrait(P, 540, 900, 1.6 + tl * 0.02, { name: 'ЭНДРЮ ИРВИН', sub: 'СТУДЕНТ-ИНЖЕНЕР', rot: 0.04, hair: '#c08a40', coat: '#5a6a3a', seed: 331 }); }),
+    portrait_m: sh((P, tl) => { desk(P); portrait(P, 540, 790, 1.6 + tl * 0.02, { name: 'ДЖОРДЖ МЭЛЛОРИ', sub: '1924', rot: -0.04, hair: '#4a2e1c' }); }),
+    portrait_i: sh((P, tl) => { desk(P, '#b8c4cc'); portrait(P, 540, 790, 1.6 + tl * 0.02, { name: 'ЭНДРЮ ИРВИН', sub: 'СТУДЕНТ-ИНЖЕНЕР', rot: 0.04, hair: '#c08a40', coat: '#5a6a3a', seed: 331 }); }),
     oxygen: sh((P, tl) => { desk(P, '#9fb0bc'); bottle(P, 420, 1050, 2.1, -0.12 + tl * 0.01); bottle(P, 680, 1080, 2.0, 0.1); }),
     camp: sh((P, tl) => { evWide(P, tl, { sky: 'dawn', sun: true, cam: { y: 120, zoom: 1.15 } });
       tent(P, 300, 1700, 1.1, '#d8a23a', 3); tent(P, 720, 1720, 1.3, '#c45a3a', 5);
@@ -39,7 +39,7 @@
     goggles: sh((P, tl) => { desk(P, '#7a8a96'); goggles(P, 540, 960, 1.9 + tl * 0.03); }),
     dusk: sh((P, tl) => evWide(P, tl, { sky: 'dawn', cam: { y: -100, zoom: 1.2 },
       climbers: [Object.assign({ x: 640 - tl * 40, y: 1590, s: 0.7, face: -1, walk: W(tl) }, MAL), Object.assign({ x: 760 - tl * 40, y: 1585, s: 0.7, face: -1, walk: W(tl) + 1.6 }, IRV)] }), { vignette: 0.65 }),
-    photo: sh((P, tl) => { desk(P, '#c4a888'); portrait(P, 540, 900, 1.5, { name: 'РУТ', sub: 'ЖЕНА МЭЛЛОРИ', rot: 0.05, hair: '#3a2416', coat: '#7a3a4a', seed: 351 });
+    photo: sh((P, tl) => { desk(P, '#c4a888'); portrait(P, 540, 790, 1.5, { name: 'РУТ', sub: 'ЖЕНА МЭЛЛОРИ', rot: 0.05, hair: '#3a2416', coat: '#7a3a4a', seed: 351 });
       if (tl > 0.4) P.label('?', 800, 650, 220, '#c0241c', '#ffffff', { rot: 0.12, seed: 352 }); }),
     camera: sh((P, tl) => { desk(P, '#9aa6b0'); kodak(P, 540, 960, 2.4 + tl * 0.04, -0.06); }),
     // ---- часть 3
@@ -50,7 +50,11 @@
     boot_close: sh((P, tl) => { glacier(P, tl, { cam: { y: 360, zoom: 1.7 } }); iceBoot(P, 520, 1200, 2.2, 1); }),
     sock_label: sh((P, tl) => { desk(P, '#7a8a96'); P.rect(200, 620, 680, 760, '#b8a888', { seed: 420, depth: 1.2 });
       P.label('A.C. IRVINE', 540, 980, 100, '#c0241c', '#ffffff', { rot: -0.04, seed: 421 }); }),
-    portrait_dna: sh((P, tl) => { desk(P, '#b8c4cc'); portrait(P, 540, 900, 1.6, { name: 'ЭНДРЮ ИРВИН', sub: '1902–1924', rot: 0.04, hair: '#c08a40', coat: '#5a6a3a', seed: 331 }); }),
+    team_close: sh((P, tl) => { glacier(P, tl, { cam: { y: 280, zoom: 1.55 } });
+      [0, 1].forEach(i => P.person(Object.assign({ x: 380 + i * 300 + tl * 30, y: 1420, s: 2.4, walk: tl * 3 + i, seed: 440 + i * 20 }, MODERN, i ? { coat: '#2a7a5a' } : {}))); P.snow(tl, 25); }),
+    dna_card: sh((P, tl) => { desk(P, '#b8c4cc'); note(P, 540, 920, 780, 560, [['АНАЛИЗ ДНК', 84, '#1d2a44'], ['ОБРАЗЕЦ ВЗЯТ', 52], ['РЕЗУЛЬТАТ:', 52, '#7a5a3a']], { rot: 0.03 });
+      if (tl > 0.3) P.label('?', 760, 1080, 180, '#c0241c', '#ffffff', { rot: -0.1, seed: 460 }); }),
+    portrait_dna: sh((P, tl) => { desk(P, '#b8c4cc'); portrait(P, 540, 790, 1.6, { name: 'ЭНДРЮ ИРВИН', sub: '1902–1924', rot: 0.04, hair: '#c08a40', coat: '#5a6a3a', seed: 331 }); }),
     glacier_wide: sh((P, tl) => { glacier(P, tl, { cam: { zoom: 1 } });
       xo.save(); xo.setLineDash([26, 18]); xo.lineWidth = 12; xo.strokeStyle = '#c0241c'; xo.beginPath(); xo.ellipse(560, 1300, 300 - tl * 40, 170 - tl * 20, 0, 0, 7); xo.stroke(); xo.restore(); }),
     mountain_clouds: sh((P, tl, t, d) => evWide(P, tl, { sky: 'storm', clouds: 0.6 + 0.3 * Math.sin(tl), snow: 60, cam: { zoom: 1.05 + tl * 0.03 } }), { vignette: 0.6 }),
