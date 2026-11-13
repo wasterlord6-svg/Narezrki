@@ -9,7 +9,7 @@
 
   const PR = {
     // ---- часть 1
-    dawn_leave: sh((P, tl) => evWide(P, tl, { sky: 'dawn', sun: true, cloudsBack: true, cam: { x: tl * 18, zoom: 1.02 + tl * 0.02 },
+    dawn_leave: sh((P, tl) => evWide(P, tl, { sky: 'day', sun: true, cloudsBack: true, cam: { x: tl * 18, zoom: 1.02 + tl * 0.02 },
       climbers: [Object.assign({ x: 300 + tl * 60, y: 1600, s: 0.9, walk: W(tl) }, MAL), Object.assign({ x: 470 + tl * 60, y: 1590, s: 0.9, walk: W(tl) + 1.6 }, IRV)] })),
     ridge_two: sh((P, tl) => evWide(P, tl, { sky: 'day', cloudsBack: true, cam: { x: 120, y: 300, zoom: 1.35 + tl * 0.03 },
       climbers: [Object.assign({ x: 520 + tl * 30, y: 1580, s: 0.55, walk: W(tl) }, MAL), Object.assign({ x: 610 + tl * 30, y: 1575, s: 0.55, walk: W(tl) + 1.6 }, IRV)], snow: 30 })),
