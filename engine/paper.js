@@ -207,3 +207,54 @@ function paintFrame(sh, tl, t, d, fx) {
   g.addColorStop(0, 'rgba(40,20,0,0)'); g.addColorStop(1, `rgba(40,20,0,${sh.vignette == null ? 0.45 : sh.vignette})`);
   xo.fillStyle = g; xo.fillRect(0, 0, OW, OH);
 }
+
+// Шторка между кадрами: лист бумаги с рваным краем уезжает в сторону, открывая новый кадр
+function paperWipe(k, i) {
+  const dir = i % 2 ? 1 : -1, x = dir * smooth(k) * (OW + 200);
+  const col = ['#e9dfc8', '#d9c9a8', '#c9d4dc', '#e2d2c0'][i % 4];
+  xo.save(); xo.translate(x, 0);
+  const edge = dir > 0 ? -30 : OW + 30, pts = [];
+  pts.push([dir > 0 ? -OW - 200 : OW + 200, -50]);
+  for (let y = -50; y <= OH + 50; y += 40) pts.push([edge + (hash(y * 0.37 + i) - 0.5) * 50, y]);
+  pts.push([dir > 0 ? -OW - 200 : OW + 200, OH + 50]);
+  if (dir < 0) pts.reverse();
+  piece(pts, col, { seed: i * 7 + 3, depth: 2.2, rough: 0 });
+  xo.restore();
+}
+
+// Бумажный дождь: косые полоски
+P.rain = function (t, n, col) {
+  t = stepT(t);
+  for (let i = 0; i < (n || 60); i++) {
+    const d = 0.4 + hash(i * 2.3) * 0.6, len = 40 + d * 60;
+    const x = (hash(i * 5.1) * (OW + 300) + t * 220 * d) % (OW + 300) - 150;
+    const y = (hash(i * 9.7) * (OH + 200) + t * (900 + d * 700)) % (OH + 200) - 100;
+    xo.save(); xo.translate(x, y); xo.rotate(0.25);
+    piece(rectPts(-3, 0, 6, len), col || '#c8d4e6', { seed: i, depth: 0.15, rough: 0.6, grain: false, shadow: 0.2 });
+    xo.restore();
+  }
+};
+
+// Луч света (маяк, прожектор): полупрозрачный клин из кальки
+P.beam = function (x, y, ang, len, w, col, alpha) {
+  xo.save(); xo.translate(x, y); xo.rotate(ang); xo.globalAlpha = alpha == null ? 0.45 : alpha;
+  const pts = [[0, -w * 0.08], [len, -w / 2], [len, w / 2], [0, w * 0.08]];
+  pathOf(torn(pts, 5, 3)); const g = xo.createLinearGradient(0, 0, len, 0); g.addColorStop(0, col || '#fff6c8'); g.addColorStop(1, 'rgba(255,246,200,0)');
+  xo.fillStyle = g; xo.fill(); xo.restore();
+};
+
+// Морские волны: несколько рваных полос, качаются ступеньками
+P.waves = function (t, baseY, cols, amp) {
+  t = stepT(t); amp = amp || 30;
+  cols.forEach((c, j) => {
+    const y0 = baseY + j * 70, pts = [[-200, OH + 300]];
+    for (let x = -200; x <= OW + 200; x += 60) pts.push([x, y0 + Math.sin(x * 0.012 + t * (1.6 + j * 0.4) + j) * amp * (1 + j * 0.3)]);
+    pts.push([OW + 200, OH + 300]);
+    piece(pts, c, { seed: 300 + j, depth: 1 + j * 0.4, rough: 3 });
+    // гребни пены
+    for (let x = -100 + (j * 90) % 200; x < OW + 100; x += 230) {
+      const yy = y0 + Math.sin(x * 0.012 + t * (1.6 + j * 0.4) + j) * amp * (1 + j * 0.3);
+      piece([[x - 40, yy + 6], [x, yy - 14], [x + 50, yy + 4], [x + 10, yy + 16]], '#eef4f8', { seed: 330 + j * 10 + x, depth: 0.3, rough: 2, grain: false });
+    }
+  });
+};

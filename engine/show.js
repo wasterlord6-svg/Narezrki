@@ -19,6 +19,6 @@ window.buildShow = function (presets, cfg) {
     slams.push({ t, dur: Math.min(sh.t1 - t - 0.02, 2.4), text: s.slam, y: presets[s.id].slamY || 520,
       color: /УВОЛЕН|БУНТ/.test(s.slam) ? '#ff3b30' : undefined, rot: i % 2 ? 0.04 : -0.04 });
   });
-  window.SHOW_DEF = { duration: dur, shots, slams, words: W, plate: cfg.plate,
+  window.SHOW_DEF = { duration: dur, shots, slams, words: W, plate: cfg.plate, paper: shots.some(x => x.paint), slamBg: presets._slamBg, slamFg: presets._slamFg,
     cuts: shots.slice(1).map(s => s.t0), hits: slams.map(s => s.t), bell: cfg.cutQuestion ? null : shots[shots.length - 1].t0 };
 };

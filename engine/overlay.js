@@ -19,9 +19,19 @@ function drawSlam(sl, t) {
   xo.font = `800 ${size}px ${FONT}`;
   const w = xo.measureText(sl.text).width; if (w > 960) size *= 960 / w;
   xo.save(); xo.globalAlpha = out;
-  xo.translate(OW / 2, sl.y || 560); xo.rotate((sl.rot || -0.04) * k); xo.scale(0.4 + 0.6 * k, 0.4 + 0.6 * k);
-  strokeText(sl.text, 0, 10, size, 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.55)', 34);
-  strokeText(sl.text, 0, 0, size, sl.color || '#ffe21f', '#000', 26);
+  if (SHOW.paper) {
+    // полоска бумаги влетает сверху с поворотом и «прилипает»
+    const drop = (1 - smooth(a / 0.16)) * -260, size2 = Math.min(size, 150);
+    xo.translate(OW / 2, (sl.y || 560) + drop); xo.rotate((sl.rot || -0.04) * 1.4);
+    const bg = sl.color ? sl.color : (SHOW.slamBg || '#f2d03a');
+    P.label(sl.text, 0, 0, size2, bg, sl.fg || (SHOW.slamFg || '#1d1a16'), { seed: Math.floor(sl.t * 10) + 7, depth: 1.6 });
+    // кусочек скотча
+    xo.save(); xo.rotate(-0.5); xo.globalAlpha = 0.55 * out; xo.fillStyle = '#efe6c8'; xo.fillRect(-60, -size2 * 0.95, 120, 46); xo.restore();
+  } else {
+    xo.translate(OW / 2, sl.y || 560); xo.rotate((sl.rot || -0.04) * k); xo.scale(0.4 + 0.6 * k, 0.4 + 0.6 * k);
+    strokeText(sl.text, 0, 10, size, 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.55)', 34);
+    strokeText(sl.text, 0, 0, size, sl.color || '#ffe21f', '#000', 26);
+  }
   xo.restore();
 }
 
@@ -107,7 +117,8 @@ function drawFrame(t, clean) {
   const fxz = { zoom: 1.02 + 0.09 * punch * punch + (mid ? 0.14 : 0) + 0.07 * p2 * p2, dx, dy, bloom: sh.bloom, vignette: sh.vignette };
   if (clean) { if (paper) paintFrame(sh, tl, t, d, { zoom: 1.02 }); else { composite({ zoom: 1.02, bloom: sh.bloom, vignette: sh.vignette }); if (sh.snow) drawSnow(t, sh.snow === true ? 1 : sh.snow); } return; }
   if (paper) paintFrame(sh, tl, t, d, fxz); else composite(fxz);
-  if (!first && tl < 0.13) { xo.fillStyle = `rgba(255,255,255,${0.6 * (1 - tl / 0.13)})`; xo.fillRect(0, 0, OW, OH); }
+  if (!first && tl < 0.13 && !paper) { xo.fillStyle = `rgba(255,255,255,${0.6 * (1 - tl / 0.13)})`; xo.fillRect(0, 0, OW, OH); }
+  if (!first && paper && tl < 0.22) paperWipe(tl / 0.22, SHOW.shots.indexOf(sh));
   if (sh.snow && !paper) drawSnow(t, sh.snow === true ? 1 : sh.snow);
   if (sh.card) drawCard(sh.card, tl, d);
   if (SHOW.plate) drawPlate(SHOW.plate, t);
